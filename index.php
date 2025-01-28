@@ -18,7 +18,7 @@
 <body>
 
   <label for="modelSelect">Escolha o Modelo:</label>
-  <select id="modelSelect">
+  <select id="modelSelect" class="w3-select">
     <option value="gemma2:2b" >Gemma 2:2B</option>
     <option value="deepseek-r1">Deepseek R1</option>
     <option value="llama3" >Llama 3</option>
