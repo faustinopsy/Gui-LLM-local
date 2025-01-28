@@ -49,9 +49,9 @@ Isso inicia um servidor local em http://localhost:11434 para processar solicita√
 ## üåç Rodando o Servidor PHP
 Agora, inicie o servidor PHP para acessar o chat:
 
-    ```
-    php -S localhost:8000
-    ```
+```
+php -S localhost:8000
+```
 
 Acesse o chat via navegador em http://localhost:8000.
 
