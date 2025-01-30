@@ -44,9 +44,11 @@ async function sendMessage() {
           console.warn("Recebeu um fragmento inválido do servidor:", chunk);
         }
       }
+      saveMessageToHistory(userMessage, botMessage);
     } catch (error) {
       botDiv.textContent = `Erro ao enviar mensagem: ${error}`;
     }
+
   }
   document.getElementById("btnenvia").addEventListener("click",sendMessage);
   function formatMessage(message) {
@@ -76,3 +78,42 @@ async function sendMessage() {
                  .replace(/'/g, "&#039;");
   }
   
+
+function saveMessageToHistory(userMessage, botMessage) {
+  let chatHistory = JSON.parse(localStorage.getItem("chatHistory")) || [];
+  chatHistory.push({ user: userMessage, bot: botMessage });
+  localStorage.setItem("chatHistory", JSON.stringify(chatHistory));
+  loadChatHistory();
+}
+
+function loadChatHistory() {
+    const historyList = document.getElementById("historyList");
+    historyList.innerHTML = "";
+    const chatHistory = JSON.parse(localStorage.getItem("chatHistory")) || [];
+    
+    chatHistory.forEach((chat, index) => {
+        const listItem = document.createElement("li");
+        listItem.classList.add("list-group-item", "list-group-item-action");
+        listItem.textContent = `🔹 ${chat.user}`;
+        listItem.onclick = () => restoreConversation(index);
+        historyList.appendChild(listItem);
+    });
+}
+
+function restoreConversation(index) {
+    const chatHistory = JSON.parse(localStorage.getItem("chatHistory")) || [];
+    if (!chatHistory[index]) return;
+    
+    const output = document.getElementById("output");
+    output.innerHTML = ""; 
+
+    const userDiv = document.createElement("div");
+    userDiv.textContent = `Eu: ${chatHistory[index].user}`;
+    output.appendChild(userDiv);
+
+    const botDiv = document.createElement("div");
+    botDiv.innerHTML = formatMessage(chatHistory[index].bot);
+    output.appendChild(botDiv);
+}
+
+document.addEventListener("DOMContentLoaded", loadChatHistory);
