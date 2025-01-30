@@ -70,3 +70,5 @@ Quer contribuir? Sinta-se à vontade para abrir um Pull Request ou criar uma Iss
 
 ## 📜 Licença
 Este projeto está licenciado sob a MIT License. Sinta-se livre para usá-lo e modificá-lo. 🔥
+
+![demostração](./assets/img/demo.png)
