@@ -69,16 +69,7 @@ async function sendMessage() {
                  .replace(/'/g, "&#039;");
   }
   
-  
-  function escapeHtml(unsafe) {
-    return unsafe.replace(/&/g, "&amp;")
-                 .replace(/</g, "&lt;")
-                 .replace(/>/g, "&gt;")
-                 .replace(/"/g, "&quot;")
-                 .replace(/'/g, "&#039;");
-  }
-  
-
+ 
 function saveMessageToHistory(userMessage, botMessage) {
   let chatHistory = JSON.parse(localStorage.getItem("chatHistory")) || [];
   chatHistory.push({ user: userMessage, bot: botMessage });
