@@ -54,6 +54,12 @@
     <input type="checkbox" id="streamToggle" checked class="form-check-input">
     Ativar Stream
   </label>
+  <div id="loadingSpinner" class="text-center my-3" style="display: none;">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Carregando...</span>
+      </div>
+      <p>Processando resposta...</p>
+    </div>
   </div>
 </div>
 

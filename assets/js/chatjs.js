@@ -1,4 +1,5 @@
 async function sendMessage() {
+    document.getElementById('loadingSpinner').style.display = 'block';
     const inputField = document.getElementById('userInput');
     const imageInput = document.getElementById('imageInput');
     const modelSelect = document.getElementById('modelSelect').value;
@@ -37,8 +38,10 @@ async function sendMessage() {
   
       while (true) {
         const { done, value } = await reader.read();
-        if (done) break;
-  
+        if (done){
+          document.getElementById('loadingSpinner').style.display = 'none';
+          break;
+        }
         const chunk = decoder.decode(value, { stream: true });
         try {
           const jsonData = JSON.parse(chunk);
