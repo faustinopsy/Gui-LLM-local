@@ -72,3 +72,7 @@ Quer contribuir? Sinta-se à vontade para abrir um Pull Request ou criar uma Iss
 Este projeto está licenciado sob a MIT License. Sinta-se livre para usá-lo e modificá-lo. 🔥
 
 ![demostração](./assets/img/demo.png)
+
+# Atualização
+
+foi incluido no controller o endereço local do LLM Studio para consumir via API o gemma3, e atualizado o javascript que responde na página
