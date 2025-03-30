@@ -33,10 +33,9 @@ async function sendMessage() {
         const chunk = decoder.decode(value, { stream: true });
         try {
           const jsonData = JSON.parse(chunk);
-          console.log(jsonData.choices[0].delta.content)
-         
+          
           if (jsonData) {
-            botMessage += jsonData.choices[0].delta.content;
+            botMessage += streamToggle ? jsonData.choices[0].delta.content : jsonData.choices[0].message.content;
             botDiv.innerHTML = formatMessage(botMessage);
             output.scrollTop = output.scrollHeight;
             hljs.highlightAll(); 
