@@ -15,31 +15,40 @@ $message =[];
 //$ollamaApiUrl = "http://localhost:11434/api/generate";
 $ollamaApiUrl = "http://127.0.0.1:1234/v1/chat/completions";
 
-$input = json_decode(file_get_contents('php://input'), true);
-$userMessage = $input['userMessage'] ?? '';
-$selectedModel = $input['modelSelect'] ?? 'gemma-3-4b-it:2';
-$streamEnabled = $input['streamToggle'] ?? true;
+$userMessage = $_POST['userMessage'] ?? '';
+$selectedModel = $_POST['modelSelect'] ?? 'gemma-3-4b-it:2';
+$streamEnabled = $_POST['streamToggle'] === 'true' ? true : false;
 $message= [
     "model" => $selectedModel,
     "prompt" => $userMessage,
     "stream" => $streamEnabled 
 ];
+$imageBase64 = null;
 
+if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
+    $imageData = file_get_contents($_FILES['image']['tmp_name']);
+    $imageBase64 = base64_encode($imageData);
+}
 
 if($selectedModel=="gemma-3-4b-it:2"){
     $message = [
         "model"=> "gemma-3-4b-it:2",
         "messages"=> [
             [ "role"=> "system", "content"=> "você é uma inteligencia artifical que responde qualquer pergunta com base no seu conhecimento" ],
-            [ "role"=> "user", "content"=> $userMessage ]
+            [ "role"=> "user",
+                "content"=> [
+                    ["type" => "text", "text" => $userMessage],
+                    ["type" => "image_url", "image_url" => [
+                        "url" => "data:image/jpeg;base64," . $imageBase64
+                    ]]
+                ]
+             ]
         ],
         "temperature"=> 0.7,
         "max_tokens"=> -1,
         "stream"=> $streamEnabled 
     ];
 }
-
-
 
 if (!$userMessage) {
     echo json_encode(["error" => "Mensagem inválida"]);

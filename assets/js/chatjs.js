@@ -1,26 +1,35 @@
 async function sendMessage() {
     const inputField = document.getElementById('userInput');
+    const imageInput = document.getElementById('imageInput');
     const modelSelect = document.getElementById('modelSelect').value;
     const streamToggle = document.getElementById('streamToggle').checked;
     const userMessage = inputField.value.trim();
-    if (!userMessage) return;
-  
-    inputField.value = '';
-  
+    if (!userMessage && !imageInput.files.length) return;
+
     const output = document.getElementById('output');
     const userDiv = document.createElement('div');
-    userDiv.textContent = `EU: ${userMessage}`;
+    userDiv.textContent = `EU: ${userMessage || '[imagem enviada]'}`;
     output.appendChild(userDiv);
-  
+
     const botDiv = document.createElement('div');
     output.appendChild(botDiv);
-  
+
+    const formData = new FormData();
+    formData.append("userMessage", userMessage);
+    formData.append("modelSelect", modelSelect);
+    formData.append("streamToggle", streamToggle);
+    if (imageInput.files.length) {
+        formData.append("image", imageInput.files[0]);
+    }
+
+    inputField.value = '';
+    imageInput.value = '';
+
     try {
-      const response = await fetch('chatController.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userMessage, modelSelect,streamToggle})
-      });
+        const response = await fetch('chatController.php', {
+            method: 'POST',
+            body: formData
+        });
   
       const reader = response.body.getReader();
       const decoder = new TextDecoder();

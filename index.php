@@ -32,6 +32,7 @@
     <div id="output"></div>
     <div id="form">
       <input type="text" id="userInput" class="form-control" placeholder="Digite sua mensagem..." >
+      <input type="file" id="imageInput" accept="image/*" class="form-control mt-2">
       <button id="btnenvia" class="btn btn-outline-secondary">Enviar</button>
     </div>
   </div>
