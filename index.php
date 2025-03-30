@@ -42,6 +42,7 @@
     <hr>
     <label for="modelSelect">Escolha o Modelo:</label>
     <select id="modelSelect" class="form-select">
+    <option value="gemma-3-4b-it:2" >Gemma 3:4B</option>
       <option value="gemma2:2b" >Gemma 2:2B</option>
       <option value="gemma2" >Gemma 2:9B</option>
       <option value="deepseek-r1">Deepseek R1</option>

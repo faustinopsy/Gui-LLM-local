@@ -31,11 +31,12 @@ async function sendMessage() {
         if (done) break;
   
         const chunk = decoder.decode(value, { stream: true });
-  
         try {
           const jsonData = JSON.parse(chunk);
-          if (jsonData.response) {
-            botMessage += jsonData.response;
+          console.log(jsonData.choices[0].delta.content)
+         
+          if (jsonData) {
+            botMessage += jsonData.choices[0].delta.content;
             botDiv.innerHTML = formatMessage(botMessage);
             output.scrollTop = output.scrollHeight;
             hljs.highlightAll(); 
