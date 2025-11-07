@@ -1,118 +1,140 @@
 <?php
 session_start();
 
-ini_set('memory_limit', '512M');
-set_time_limit(0);
-ini_set('display_errors', 1);
+require_once __DIR__ . '/vendor/autoload.php';
+
+use App\Interfaces\LLMServiceProvider;
+use App\Services\OllamaProvider;
+use App\Services\OpenAIProvider;
+use App\Services\GeminiProvider;
+
+// --- Configuração de Erros e Ambiente ---
+ini_set('display_errors', 1); // Em produção, mude para 0
 ini_set('log_errors', 1);
 ini_set('error_log', __DIR__ . '/logs/php_errors.log');
 error_reporting(E_ALL);
 
-header('Content-Type: text/plain');
-header('Cache-Control: no-cache');
-header('Access-Control-Allow-Origin: *');
-$message =[];
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    echo json_encode(["error" => "Método inválido"]);
-    exit;
-}
+set_time_limit(0); // Permite que o stream dure o tempo necessário
+ini_set('memory_limit', '512M');
 
-$userMessage = $_POST['userMessage'] ?? '';
-$selectedModel = $_POST['modelSelect'] ?? 'gemma-3-4b-it:2';
-$streamEnabled = $_POST['streamToggle'] === 'true' ? true : false;
-$useOllama = $_POST['ollamaToggle'] === 'true' ? true : false;
-
-$apiUrl = $useOllama ? "http://localhost:11434/api/generate" : "http://127.0.0.1:1234/v1/chat/completions";
-
-$message = [];
+// --- Variáveis de Ambiente (Opcional, mas recomendado) ---
+// Para carregar chaves de API de um arquivo .env, use uma biblioteca como vlucas/phpdotenv
+// $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
+// $dotenv->load();
 
 
-$imageBase64 = null;
-if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
-    $imageData = file_get_contents($_FILES['image']['tmp_name']);
-    $imageBase64 = base64_encode($imageData);
-}
+/**
+ * Cria e retorna uma instância do provedor de LLM solicitado.
+ * Esta é a "fábrica" que torna nosso sistema "plug and play".
+ *
+ * @param string $providerName O nome do provedor (ex: "ollama", "gemini")
+ * @return LLMServiceProvider A instância do provedor
+ * @throws Exception Se o provedor for desconhecido
+ */
+function getProvider(string $providerName): LLMServiceProvider
+{
+    
+    switch ($providerName) {
+        case 'ollama':
+            // Conecta-se ao Ollama rodando localmente
+            return new OllamaProvider("http://localhost:11434");
 
-if ($useOllama) {
-    $message = [
-        "model" => $selectedModel,
-        "prompt" => $userMessage,
-        "stream" => $streamEnabled,
-    ];
-    if ($imageBase64) {
-         $message['images'] = [$imageBase64];
-    }
+        case 'openai_local':
+            // Conecta-se ao LM Studio ou similar
+            return new OpenAIProvider("http://127.0.0.1:1234");
+            
+        case 'gemini':
+            // Conecta-se à API do Google Gemini
+            // É ALTAMENTE recomendado guardar chaves em variáveis de ambiente
+            $apiKey = getenv('GEMINI_API_KEY') ?: 'SUA_CHAVE_API_GEMINI_AQUI';
+            $provider = new GeminiProvider();
+            $provider->setApiKey($apiKey);
+            return $provider;
 
-} else {
-    $message = [
-        "model" => $selectedModel,
-        "messages" => [
-            [ "role" => "system", "content" => "Você é uma inteligência artificial que responde qualquer pergunta com base no seu conhecimento." ],
-            [ "role" => "user", "content" => $userMessage ]
-        ],
-        "temperature" => 0.7,
-        "max_tokens" => -1,
-        "stream" => $streamEnabled
-    ];
-    if ($imageBase64) {
-        $message['messages'][1]['content'] = [
-            ["type" => "text", "text" => $userMessage],
-            ["type" => "image_url", "image_url" => [
-                "url" => "data:image/jpeg;base64," . $imageBase64
-            ]]
-        ];
+        case 'openai_remote':
+            // Conecta-se à API real da OpenAI
+            $apiKey = getenv('OPENAI_API_KEY') ?: 'SUA_CHAVE_API_OPENAI_AQUI';
+            $provider = new OpenAIProvider("https://api.openai.com");
+            $provider->setApiKey($apiKey);
+            return $provider;
+
+        default:
+            throw new Exception("Provedor de LLM desconhecido: " . htmlspecialchars($providerName));
     }
 }
 
 
-if (!$userMessage) {
-    echo json_encode(["error" => "Mensagem inválida"]);
-    exit;
+try {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        throw new Exception("Método de requisição inválido.");
+    }
+
+    // 1. Coletar e Validar Entradas
+    // Este é o novo campo que adicionaremos no front-end (Fase 5)
+    $providerName = $_POST['providerSelect'] ?? 'ollama'; 
+    $userMessage = $_POST['userMessage'] ?? '';
+    $selectedModel = $_POST['modelSelect'] ?? 'gemma3:4b';
+    $streamEnabled = ($_POST['streamToggle'] ?? 'true') === 'true';
+
+    if (empty($userMessage) && empty($_FILES['image'])) {
+         throw new Exception("Mensagem ou imagem é obrigatória.");
+    }
+
+    // 2. Obter o Provedor "Plugado"
+    $provider = getProvider($providerName);
+
+    // 3. Preparar Dados Genéricos (Histórico e Imagens)
+    // TODO: Implementar um histórico de chat real na sessão
+    $messages = [
+        ["role" => "system", "content" => "Você é um assistente de IA prestativo e direto."],
+        ["role" => "user", "content" => $userMessage]
+    ];
+
+    $imagesBase64 = [];
+    if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
+        $imageData = file_get_contents($_FILES['image']['tmp_name']);
+        $imagesBase64[] = base64_encode($imageData);
+    }
+
+    // 4. Executar (Stream ou Não-Stream)
+    
+    if ($streamEnabled) {
+        // --- MODO STREAMING ---
+        header('Content-Type: text/plain'); // Ou text/event-stream se usar o formato SSE
+        header('Cache-Control: no-cache');
+        header('X-Accel-Buffering: no');
+        
+        // Define o callback que será executado para cada pedaço de texto
+        $streamCallback = function ($chunk) {
+            echo $chunk;
+            // Força o PHP a enviar a saída para o navegador imediatamente
+            ob_flush();
+            flush();
+        };
+        
+        // Chama o método de stream. O provedor cuida de todo o resto.
+        $provider->generateStream($messages, $selectedModel, $imagesBase64, $streamCallback);
+
+    } else {
+        // --- MODO NÃO-STREAMING ---
+        header('Content-Type: application/json');
+
+        // Chama o método de geração completa
+        $fullResponse = $provider->generate($messages, $selectedModel, $imagesBase64);
+
+        // Envia uma resposta JSON limpa e consistente para o front-end
+        echo json_encode(["response" => $fullResponse]);
+    }
+
+} catch (Exception $e) {
+    // --- Tratamento de Erros ---
+    http_response_code(500); // Erro interno do servidor
+    header('Content-Type: application/json');
+    echo json_encode([
+        "error" => "Um erro ocorreu no servidor.",
+        "details" => $e->getMessage()
+    ]);
+    error_log($e->getMessage()); // Loga o erro real
 }
 
-$curl = curl_init();
-curl_setopt_array($curl, [
-    CURLOPT_URL => $apiUrl ,
-    CURLOPT_RETURNTRANSFER => true,
-    CURLOPT_ENCODING => '',
-    CURLOPT_MAXREDIRS => 10,
-    CURLOPT_TIMEOUT => 120,
-    CURLOPT_FOLLOWLOCATION => true,
-    CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-    CURLOPT_CUSTOMREQUEST => 'POST',
-    CURLOPT_POSTFIELDS => json_encode($message),
-    CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
-    CURLOPT_WRITEFUNCTION => function ($ch, $chunk) use ($useOllama) {
-        if ($useOllama && $chunk !== "\n") {
-            $data = json_decode($chunk, true);
-            if (isset($data['response'])) {
-                echo $data['response'];
-            }
-            if (isset($data['done']) && $data['done'] === true) {
-            }
-        } elseif (!$useOllama && strpos($chunk, 'data: ') === 0) {
-             $data = json_decode(substr($chunk, 6), true);
-             if (isset($data['choices'][0]['delta']['content'])) {
-                 echo $data['choices'][0]['delta']['content'];
-             }
-             if (isset($data['choices'][0]['finish_reason']) && $data['choices'][0]['finish_reason'] !== null) {
-             }
-
-        } else {
-             echo $chunk;
-        }
-
-        ob_flush();
-        flush();
-        return strlen($chunk);
-    },
-]);
-
-curl_exec($curl);
-
-if (curl_errno($curl)) {
-    echo json_encode(["error" => curl_error($curl)]);
-}
-
-curl_close($curl);
 exit;

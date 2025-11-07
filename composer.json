@@ -1,0 +1,10 @@
+{
+    "name": "llm-local/ia-hub",
+    "description": "Um hub de chat para múltiplos provedores de LLM.",
+    "type": "project",
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/"
+        }
+    }
+}
