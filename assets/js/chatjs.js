@@ -1,15 +1,15 @@
 async function sendMessage() {
-document.getElementById('loadingSpinner').style.display = 'block';
-const inputField = document.getElementById('userInput');
-const imageInput = document.getElementById('imageInput');
-const providerSelect = document.getElementById('providerSelect').value; // NOVO
-const modelSelect = document.getElementById('modelSelect').value;
-const streamToggle = document.getElementById('streamToggle').checked;
-const userMessage = inputField.value.trim();
+  document.getElementById('loadingSpinner').style.display = 'block';
+  const inputField = document.getElementById('userInput');
+  const imageInput = document.getElementById('imageInput');
+  const providerSelect = document.getElementById('providerSelect').value; // NOVO
+  const modelSelect = document.getElementById('modelSelect').value;
+  const streamToggle = document.getElementById('streamToggle').checked;
+  const userMessage = inputField.value.trim();
 
-if (!userMessage && !imageInput.files.length) {
-document.getElementById('loadingSpinner').style.display = 'none';
-return;
+  if (!userMessage && !imageInput.files.length) {
+  document.getElementById('loadingSpinner').style.display = 'none';
+  return;
 }
 
 const output = document.getElementById('output');
@@ -26,9 +26,9 @@ output.scrollTop = output.scrollHeight;
 
 const formData = new FormData();
   formData.append("providerSelect", providerSelect); // NOVO
-formData.append("userMessage", userMessage);
-formData.append("modelSelect", modelSelect);
-formData.append("streamToggle", streamToggle);
+  formData.append("userMessage", userMessage);
+  formData.append("modelSelect", modelSelect);
+  formData.append("streamToggle", streamToggle);
 if (imageInput.files.length) {
 formData.append("image", imageInput.files[0]);
 }
@@ -39,23 +39,23 @@ imageInput.value = '';
 let botMessage = '';
 
 try {
-const response = await fetch('chatController.php', {
-method: 'POST',
-body: formData
+  const response = await fetch('chatController.php', {
+  method: 'POST',
+  body: formData
 });
 
 if (!response.ok) {
         // Tenta ler o erro como JSON, que é o que nosso PHP agora envia
         let errorData;
-        try {
-            errorData = await response.json();
-        } catch (e) {
-            errorData = { error: "Erro desconhecido", details: await response.text() };
-        }
-const errorText = `${errorData.error} (Detalhes: ${errorData.details || 'N/A'})`;
-botDiv.textContent = `Erro do servidor (${response.status}): ${errorText}`;
-document.getElementById('loadingSpinner').style.display = 'none';
-return;
+    try {
+        errorData = await response.json();
+    } catch (e) {
+        errorData = { error: "Erro desconhecido", details: await response.text() };
+    }
+  const errorText = `${errorData.error} (Detalhes: ${errorData.details || 'N/A'})`;
+  botDiv.textContent = `Erro do servidor (${response.status}): ${errorText}`;
+  document.getElementById('loadingSpinner').style.display = 'none';
+  return;
 }
 
 let finalBotContent = '';
@@ -67,32 +67,32 @@ const decoder = new TextDecoder();
 botDiv.textContent = '';
 
 while (true) {
-const { done, value } = await reader.read();
-if (done) break;
+    const { done, value } = await reader.read();
+    if (done) break;
 
-const chunk = decoder.decode(value, { stream: true });
-botMessage += chunk;
-// Não use formatMessage em cada chunk. Formate apenas no final.
-botDiv.innerHTML = formatMessage(botMessage);
-output.scrollTop = output.scrollHeight;
+    const chunk = decoder.decode(value, { stream: true });
+    botMessage += chunk;
+    // Não use formatMessage em cada chunk. Formate apenas no final.
+    botDiv.innerHTML = formatMessage(botMessage);
+    output.scrollTop = output.scrollHeight;
 }
         finalBotContent = botMessage;
 
 } else {
-        try {
-            const parsedJson = await response.json();
-            if (parsedJson.response) {
-                finalBotContent = parsedJson.response;
-            } else if (parsedJson.error) {
-                throw new Error(parsedJson.details || parsedJson.error);
-            } else {
-                throw new Error("Resposta JSON inválida do servidor.");
-            }
-        } catch (e) {
-            console.error("Falha ao analisar JSON não-streaming:", e);
-            botDiv.textContent = `Erro ao processar resposta: ${e.message}`;
-            finalBotContent = "Erro.";
+    try {
+        const parsedJson = await response.json();
+        if (parsedJson.response) {
+            finalBotContent = parsedJson.response;
+        } else if (parsedJson.error) {
+            throw new Error(parsedJson.details || parsedJson.error);
+        } else {
+            throw new Error("Resposta JSON inválida do servidor.");
         }
+    } catch (e) {
+        console.error("Falha ao analisar JSON não-streaming:", e);
+        botDiv.textContent = `Erro ao processar resposta: ${e.message}`;
+        finalBotContent = "Erro.";
+    }
 }
 
 // Formata a mensagem completa *apenas uma vez* no final
@@ -105,9 +105,9 @@ document.getElementById('loadingSpinner').style.display = 'none';
 saveMessageToHistory(userMessage || '[imagem enviada]', finalBotContent);
 
 } catch (error) {
-botDiv.textContent = `Erro na requisição: ${error}`;
-document.getElementById('loadingSpinner').style.display = 'none';
-}
+  botDiv.textContent = `Erro na requisição: ${error}`;
+  document.getElementById('loadingSpinner').style.display = 'none';
+  }
 }
 
 document.getElementById("btnenvia").addEventListener("click", sendMessage);
@@ -121,22 +121,22 @@ document.getElementById('clearHistoryBtn').addEventListener('click', async () =>
 function formatMessage(message) {
   if (!message) return "";
 
-  // 🔹 Garante que as crases triplas sejam reconhecidas mesmo sem quebra de linha
+  // Garante que as crases triplas sejam reconhecidas mesmo sem quebra de linha
   message = message.replace(/```(\w+)?\s*([\s\S]*?)\s*```/g, (match, lang, code) => {
     return `<pre><code class="${lang || 'plaintext'}">${escapeHtml(code.trim())}</code></pre>`;
   });
 
-  // 🔹 Converte markdown inline `code`
+  // Converte markdown inline `code`
   message = message.replace(/`([^`]+)`/g, '<code>$1</code>');
 
-  // 🔹 Converte markdown **bold**
+  // Converte markdown **bold**
   message = message.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
 
-  // 🔹 Converte markdown *italic*
+  // Converte markdown *italic*
   message = message.replace(/\*(.*?)\*/g, '<em>$1</em>');
 
-  // 🔹 Evita converter \n dentro de blocos <pre>
-  //   Primeiro separa os blocos <pre> e aplica <br> apenas fora deles
+  // Evita converter \n dentro de blocos <pre>
+  // Primeiro separa os blocos <pre> e aplica <br> apenas fora deles
   const parts = message.split(/(<pre[\s\S]*?<\/pre>)/g);
   message = parts.map(part => {
     if (part.startsWith('<pre')) return part; // preserva o bloco de código
@@ -148,52 +148,52 @@ function formatMessage(message) {
 
 
 function escapeHtml(unsafe) {
-return unsafe.replace(/&/g, "&amp;")
-.replace(/</g, "&lt;")
-.replace(/>/g, "&gt;")
-.replace(/"/g, "&quot;")
-.replace(/'/g, "&#039;");
+  return unsafe.replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 }
 
 function saveMessageToHistory(userMessage, botMessage) {
-let chatHistory = JSON.parse(localStorage.getItem("chatHistory")) || [];
-chatHistory.push({ user: userMessage, bot: botMessage });
-localStorage.setItem("chatHistory", JSON.stringify(chatHistory));
-loadChatHistory();
+  let chatHistory = JSON.parse(localStorage.getItem("chatHistory")) || [];
+  chatHistory.push({ user: userMessage, bot: botMessage });
+  localStorage.setItem("chatHistory", JSON.stringify(chatHistory));
+  loadChatHistory();
 }
 
 function loadChatHistory() {
-const historyList = document.getElementById("historyList");
-historyList.innerHTML = "";
-const chatHistory = JSON.parse(localStorage.getItem("chatHistory")) || [];
+  const historyList = document.getElementById("historyList");
+  historyList.innerHTML = "";
+  const chatHistory = JSON.parse(localStorage.getItem("chatHistory")) || [];
 
-chatHistory.forEach((chat, index) => {
-const listItem = document.createElement("li");
-listItem.classList.add("list-group-item", "list-group-item-action");
-// Mostra apenas o início da mensagem do usuário
-      const previewText = chat.user.length > 40 ? chat.user.substring(0, 40) + "..." : chat.user;
-listItem.textContent = `🔹 ${previewText}`;
-listItem.onclick = () => restoreConversation(index);
-historyList.appendChild(listItem);
-});
+  chatHistory.forEach((chat, index) => {
+    const listItem = document.createElement("li");
+    listItem.classList.add("list-group-item", "list-group-item-action");
+    // Mostra apenas o início da mensagem do usuário
+          const previewText = chat.user.length > 40 ? chat.user.substring(0, 40) + "..." : chat.user;
+    listItem.textContent = `🔹 ${previewText}`;
+    listItem.onclick = () => restoreConversation(index);
+    historyList.appendChild(listItem);
+  });
 }
 
 function restoreConversation(index) {
-const chatHistory = JSON.parse(localStorage.getItem("chatHistory")) || [];
-if (!chatHistory[index]) return;
+  const chatHistory = JSON.parse(localStorage.getItem("chatHistory")) || [];
+  if (!chatHistory[index]) return;
 
-const output = document.getElementById("output");
-output.innerHTML = "";
+  const output = document.getElementById("output");
+  output.innerHTML = "";
 
-const userDiv = document.createElement("div");
-userDiv.textContent = `Eu: ${chatHistory[index].user}`;
-output.appendChild(userDiv);
+  const userDiv = document.createElement("div");
+  userDiv.textContent = `<b>Eu:</b> ${chatHistory[index].user}`;
+  output.appendChild(userDiv);
 
-const botDiv = document.createElement("div");
+  const botDiv = document.createElement("div");
   botDiv.className = 'bot-message';
-botDiv.innerHTML = formatMessage(chatHistory[index].bot);
-output.appendChild(botDiv);
-hljs.highlightAll(); // Aplica o highlight ao restaurar
+  botDiv.innerHTML = formatMessage(chatHistory[index].bot);
+  output.appendChild(botDiv);
+  hljs.highlightAll();
 }
 
 document.addEventListener("DOMContentLoaded", loadChatHistory);
