@@ -2,7 +2,7 @@ async function sendMessage() {
 document.getElementById('loadingSpinner').style.display = 'block';
 const inputField = document.getElementById('userInput');
 const imageInput = document.getElementById('imageInput');
-  const providerSelect = document.getElementById('providerSelect').value; // NOVO
+const providerSelect = document.getElementById('providerSelect').value; // NOVO
 const modelSelect = document.getElementById('modelSelect').value;
 const streamToggle = document.getElementById('streamToggle').checked;
 const userMessage = inputField.value.trim();
@@ -79,8 +79,6 @@ output.scrollTop = output.scrollHeight;
         finalBotContent = botMessage;
 
 } else {
-        // --- LÓGICA DE NÃO-STREAMING (MUITO MAIS SIMPLES) ---
-        // Nosso back-end agora *sempre* envia um JSON limpo: {"response": "..."}
         try {
             const parsedJson = await response.json();
             if (parsedJson.response) {
@@ -114,32 +112,47 @@ document.getElementById('loadingSpinner').style.display = 'none';
 
 document.getElementById("btnenvia").addEventListener("click", sendMessage);
 
-function formatMessage(message) {
-// Converte markdown de bloco de código para <pre><code>
-message = message.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, lang, code) => {
-// A LINHA PROBLEMÁTICA FOI REMOVIDA
-return `<pre><code class="${lang || 'plaintext'}">${escapeHtml(code)}</code></pre>`;
+document.getElementById('clearHistoryBtn').addEventListener('click', async () => {
+  await fetch('chatController.php?action=clear', { method: 'POST' });
+  document.getElementById('output').innerHTML = '';
+  alert('Histórico limpo!');
 });
 
-  // Converte markdown inline `code`
-message = message.replace(/`([^`]+)`/g, '<code>$1</code>');
-  // Converte markdown **bold**
-message = message.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-  // Converte markdown *italic*
-message = message.replace(/\*(.*?)\*/g, '<em>$1</em>');
+function formatMessage(message) {
+  if (!message) return "";
 
-  // Converte quebras de linha em <br> (DEPOIS do <pre> para não afetar o código)
-message = message.replace(/\n/g, '<br>');
+  // 🔹 Garante que as crases triplas sejam reconhecidas mesmo sem quebra de linha
+  message = message.replace(/```(\w+)?\s*([\s\S]*?)\s*```/g, (match, lang, code) => {
+    return `<pre><code class="${lang || 'plaintext'}">${escapeHtml(code.trim())}</code></pre>`;
+  });
 
-return `<div>${message}</div>`;
+  // 🔹 Converte markdown inline `code`
+  message = message.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+  // 🔹 Converte markdown **bold**
+  message = message.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+  // 🔹 Converte markdown *italic*
+  message = message.replace(/\*(.*?)\*/g, '<em>$1</em>');
+
+  // 🔹 Evita converter \n dentro de blocos <pre>
+  //   Primeiro separa os blocos <pre> e aplica <br> apenas fora deles
+  const parts = message.split(/(<pre[\s\S]*?<\/pre>)/g);
+  message = parts.map(part => {
+    if (part.startsWith('<pre')) return part; // preserva o bloco de código
+    return part.replace(/\n/g, '<br>');
+  }).join('');
+
+  return `<div>${message}</div>`;
 }
+
 
 function escapeHtml(unsafe) {
 return unsafe.replace(/&/g, "&amp;")
- .replace(/</g, "&lt;")
- .replace(/>/g, "&gt;")
- .replace(/"/g, "&quot;")
- .replace(/'/g, "&#039;");
+.replace(/</g, "&lt;")
+.replace(/>/g, "&gt;")
+.replace(/"/g, "&quot;")
+.replace(/'/g, "&#039;");
 }
 
 function saveMessageToHistory(userMessage, botMessage) {

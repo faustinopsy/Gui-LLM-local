@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LLM Hub</title> <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<title>LLM Hub</title> <link href="assets/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="./assets/css/dark.min.css">
 <script src="./assets/js/highlight.min.js"></script>
 
@@ -20,6 +20,8 @@ code { font-family: "Courier New", monospace; }
 <div class="offcanvas-header">
 <h5 class="offcanvas-title">📜 Histórico</h5>
 <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+<button class="btn btn-danger mt-2" id="clearHistoryBtn">🧹 Limpar Memória</button>
+
 </div>
 <div class="offcanvas-body">
 <ul id="historyList" class="list-group"></ul>
@@ -73,6 +75,6 @@ code { font-family: "Courier New", monospace; }
 </div>
 
 <script src="./assets/js/chatjs.js" defer></script> 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="assets/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

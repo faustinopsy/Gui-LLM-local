@@ -63,12 +63,16 @@ function getProvider(string $providerName): LLMServiceProvider
     }
 }
 
-
 try {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
         throw new Exception("Método de requisição inválido.");
     }
-
+    // --- LIMPAR HISTÓRICO DE CHAT ---
+    if (isset($_GET['action']) && $_GET['action'] === 'clear') {
+        unset($_SESSION['chat_history']);
+        echo json_encode(["message" => "Histórico limpo."]);
+        exit;
+    }
     // 1. Coletar e Validar Entradas
     // Este é o novo campo que adicionaremos no front-end (Fase 5)
     $providerName = $_POST['providerSelect'] ?? 'ollama'; 
@@ -83,12 +87,25 @@ try {
     // 2. Obter o Provedor "Plugado"
     $provider = getProvider($providerName);
 
-    // 3. Preparar Dados Genéricos (Histórico e Imagens)
-    // TODO: Implementar um histórico de chat real na sessão
-    $messages = [
-        ["role" => "system", "content" => "Você é um assistente de IA prestativo e direto."],
-        ["role" => "user", "content" => $userMessage]
-    ];
+    // --- HISTÓRICO DE CONVERSA EM SESSÃO ---
+    // Cada usuário mantém seu histórico separado na sessão
+    if (!isset($_SESSION['chat_history'])) {
+        $_SESSION['chat_history'] = [
+            ["role" => "system", "content" => "Você é um assistente de IA prestativo que possui memória, pois o usuário envia o histórico de conversa que é uma lista de strings, antes de responder entenda o histórico."]
+        ];
+    }
+
+    // Adiciona a nova mensagem do usuário ao histórico
+    $_SESSION['chat_history'][] = ["role" => "user", "content" => $userMessage];
+
+    // Garante que não acumule demais — mantém só as últimas 20 mensagens
+    //if (count($_SESSION['chat_history']) > 40) {
+        // Mantém a mensagem do sistema + as últimas 39
+       // $_SESSION['chat_history'] = array_slice($_SESSION['chat_history'], -40);
+   // }
+
+    // Copia o histórico para envio ao modelo
+    $messages = $_SESSION['chat_history'];
 
     $imagesBase64 = [];
     if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
@@ -104,16 +121,18 @@ try {
         header('Cache-Control: no-cache');
         header('X-Accel-Buffering: no');
         
-        // Define o callback que será executado para cada pedaço de texto
-        $streamCallback = function ($chunk) {
+        $fullResponse = '';
+        $streamCallback = function ($chunk) use (&$fullResponse) {
             echo $chunk;
-            // Força o PHP a enviar a saída para o navegador imediatamente
+            $fullResponse .= $chunk;
             ob_flush();
             flush();
         };
-        
+
         // Chama o método de stream. O provedor cuida de todo o resto.
         $provider->generateStream($messages, $selectedModel, $imagesBase64, $streamCallback);
+        $_SESSION['chat_history'][] = ["role" => "assistant", "content" => trim($fullResponse)];
+
 
     } else {
         // --- MODO NÃO-STREAMING ---
@@ -121,6 +140,7 @@ try {
 
         // Chama o método de geração completa
         $fullResponse = $provider->generate($messages, $selectedModel, $imagesBase64);
+        $_SESSION['chat_history'][] = ["role" => "assistant", "content" => $fullResponse];
 
         // Envia uma resposta JSON limpa e consistente para o front-end
         echo json_encode(["response" => $fullResponse]);
